@@ -1,23 +1,39 @@
 'use strict';
 
 const base64 = require('base-64');
-const { user } = require('../models/index.js');
+const bcrypt = require('bcrypt');
+
+const { userModel } = require('../models/user');
 
 module.exports = async (req, res, next) => {
-  if (req.headers.authorization) {
-    next('Invalid Login');
-    return;
-  }
-  let basicHeaderParts = req.headers.authorization.split(' '); // ['Basic', 'am9objpmb28=']
-  let encodedString = basicHeaderParts.pop(); // am9objpmb28=
-  let decodedString = base64.decode(encodedString); // "username:password"
-  let [username, password] = decodedString.split(':'); // username, password
+  // console.log(req);
+  let { authorization } = req.headers;
+  console.log('auth string', authorization);
+  // Basic UnlhbjpwYXNzMTIz
 
-  try {
-    req.user = await user.authenticateBasic(username, password);
-    next();
-  } catch (error) {
-    console.log(error);
-    res.status(403).send('Invalid Login');
+  //1. isolated the encoded part of the string
+  let authString = authorization.split(' ')[1];
+  console.log('authString:', authString);
+
+  //2. I need to decode the isolated string
+  let decodedAuthStr = base64.decode(authString);
+  console.log('decodedAuthStr:', decodedAuthStr);
+  //3. I need to isolate the pass word FROM the decoded string.  username:password
+  // array destructuring
+  let [username, password] = decodedAuthStr.split(':');
+  console.log('username: ', username, 'password: ', password);
+
+  let user = await userModel.findOne({ where: { username } });
+  console.log('Lucky as a user', user);
+  if (user) {
+    let validUser = await bcrypt.compare(password, user.password);
+    if (validUser) {
+      req.user = user;
+      next();
+    } else {
+      next('Not Authorized (password incorrect');
+    }
+  } else {
+    next('Not Authorized (user does not exist in DB)');
   }
 };
