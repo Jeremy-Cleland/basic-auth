@@ -1,4 +1,5 @@
 'use strict';
+const bcrypt = require('bcrypt');
 
 const userSchema = (sequelizeDatabase, DataTypes) => {
   const model = sequelizeDatabase.define('users', {
@@ -12,7 +13,10 @@ const userSchema = (sequelizeDatabase, DataTypes) => {
       allowNull: false,
     },
   });
-  model.beforeCreate((user) => {
+  model.beforeCreate(async (user) => {
+    let hashedPassword = await bcrypt.hash(user.password, 5);
+    console.log('hashed password');
+    user.password = hashedPassword;
     console.log('our user', user);
   });
 
