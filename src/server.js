@@ -3,16 +3,16 @@
 require('dotenv').config();
 const express = require('express');
 
-const notFound = require('./middleware/404');
-const errorHandler = require('./middleware/500');
-const usersRouter = require('./auth/routes/users');
+const notFound = require('./auth/middleware/404');
+const errorHandler = require('./auth/middleware/500');
+const router = require('./auth/router');
 
 const PORT = process.env.PORT || 3002;
 
 const app = express();
 
 app.use(express.json());
-app.use(usersRouter);
+app.use(router);
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res, next) => {
